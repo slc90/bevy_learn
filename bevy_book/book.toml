@@ -1,0 +1,15 @@
+[book]
+title = "Bevy 0.19 中文教程"
+authors = ["mdrs"]
+language = "zh-CN"
+description = "Bevy 0.19 游戏引擎中文教程合集，涵盖 ECS、资源、调度、插件、UI、3D、资产、渲染、后台线程等核心主题。"
+
+[build]
+build-dir = "book"
+
+[output.html]
+mathjax-support = false
+
+[output.html.search]
+enable = true
+limit-results = 30
