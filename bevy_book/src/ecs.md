@@ -604,9 +604,6 @@ flowchart TD
     D --> E[StateTransition]
     E --> F[RunFixedMainLoop]
     F --> G[Update]
-    G --> H[PostUpdate]
-    H --> I[Last]
-
     G --> J[系统参数校验]
     J --> K[解析 Query / Res / Commands]
     K --> L[匹配 Archetype 与组件存储]
@@ -614,6 +611,9 @@ flowchart TD
     M --> N[读取组件或资源]
     N --> O[写入组件 / 资源 / Commands 队列]
     O --> P[到同步点应用 deferred commands]
+    P --> H[SpawnScene]
+    H --> I[PostUpdate]
+    I --> Q[Last]
 ```
 
 再看实体生命周期。官方实体与命令文档告诉我们：实体创建后只是一个 ID + 组件集合；系统通过 Query 读取和修改组件；删除或移除组件经常通过 `Commands` 排队；而观察者或 `RemovedComponents<T>` 可以在生命周期事件发生后继续做收尾。官方 removal detection 示例也给出了典型模式：系统移除组件，observer 用 `On<Remove, T>` 响应。
