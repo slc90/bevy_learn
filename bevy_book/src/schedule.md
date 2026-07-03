@@ -345,12 +345,15 @@ presentation -> x=2
 这是 Bevy 0.19 里最容易“看起来差不多，实际语义差很多”的 API 对。官方文档明确说明：`run_if` 作用在一个包含多个系统的组合上时，**条件最多只评估一次**；而 `distributive_run_if` 会把条件分发到每个系统，各自开跑前单独判断。文档还明确指出：前者不能保证整个组执行期间条件一直成立，后者则不能保证所有系统看到的条件值相同。
 
 ```rust
-use bevy::ecs::schedule::common_conditions::resource_exists_and_equals;
 use bevy::ecs::schedule::Schedule;
 use bevy::prelude::*;
 
 #[derive(Resource, Debug, PartialEq, Eq)]
 struct Gate(bool);
+
+fn gate_is_open(gate: Option<Res<Gate>>) -> bool {
+    gate.is_some_and(|gate| gate.0)
+}
 
 fn a(mut gate: ResMut<Gate>) {
     println!("A runs, then closes the gate");
@@ -367,11 +370,7 @@ fn main() {
     world_once.insert_resource(Gate(true));
 
     let mut schedule_once = Schedule::default();
-    schedule_once.add_systems(
-        (a, b)
-            .chain()
-            .run_if(resource_exists_and_equals(Gate(true))),
-    );
+    schedule_once.add_systems((a, b).chain().run_if(gate_is_open));
 
     println!("-- set-level run_if --");
     schedule_once.run(&mut world_once);
@@ -381,11 +380,7 @@ fn main() {
     world_each.insert_resource(Gate(true));
 
     let mut schedule_each = Schedule::default();
-    schedule_each.add_systems(
-        (a, b)
-            .chain()
-            .distributive_run_if(resource_exists_and_equals(Gate(true))),
-    );
+    schedule_each.add_systems((a, b).chain().distributive_run_if(gate_is_open));
 
     println!("-- distributive_run_if --");
     schedule_each.run(&mut world_each);
@@ -402,6 +397,8 @@ B runs
 -- distributive_run_if --
 A runs, then closes the gate
 ```
+
+这里把条件写成 `gate_is_open` 这样的具名函数，是因为 `distributive_run_if` 会把同一个条件复制到 tuple 里的每个系统上；直接把某些返回闭包的条件构造器塞进去，可能不满足这个 API 对 `Clone` 的要求。
 
 工程上可以把经验法则记成一句话：**想要“整组一起跑/一起不跑”，用 set 级 `run_if`；想要“每个系统临门一脚再判断”，用 `distributive_run_if`。** 官方文档正是这样区分两者的。
 
