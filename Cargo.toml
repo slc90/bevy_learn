@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "crates/schedule",
+    "crates/plugin",
 ]
 resolver = "3"
 

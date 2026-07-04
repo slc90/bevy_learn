@@ -235,9 +235,11 @@ RUST_LOG=info,bevy_ecs=warn,my_game=debug cargo run
 Bevy 0.19 的“高级日志玩法”不是接 `env_logger`，而是直接走 **`tracing_subscriber` layer**。源码对 `custom_layer` 与 `fmt_layer` 的职责分工写得很清楚：`custom_layer` 用于**添加额外 layer**，而 `fmt_layer` 用于**覆盖默认的格式化 layer**；如果你想去掉时间戳、改字段格式、改输出 writer，应该优先使用 `fmt_layer`。官方还在源码文档里直接把 `examples/app/log_layers.rs` 指为完整示例。
 
 ```rust
-use bevy::log::{BoxedFmtLayer, BoxedLayer};
+use bevy::log::{
+    BoxedFmtLayer, BoxedLayer,
+    tracing_subscriber::{Layer, field::MakeExt},
+};
 use bevy::prelude::*;
-use tracing_subscriber::fmt::format::MakeExt;
 
 fn custom_layer(_app: &mut App) -> Option<BoxedLayer> {
     Some(Box::new(vec![
