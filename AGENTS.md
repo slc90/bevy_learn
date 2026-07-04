@@ -1,5 +1,7 @@
 # AGENTS.md
 
+@rules\AGENTS.md
+
 ## 项目介绍
 
 这是一个用于学习 Bevy 和 Rust 游戏开发的 workspace 项目。项目以 Cargo workspace 管理代码，当前主要代码入口放在 `crates` 目录下，并配套维护学习资料、需求记录、开发规则和常用命令，方便后续按模块逐步扩展 Bevy 示例与 ECS 实验代码。

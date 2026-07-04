@@ -867,7 +867,7 @@ src/
 | 当前屏幕是菜单还是游戏内 | `State<T>` / `NextState<T>` | 它影响调度、可见性、生命周期  |
 | 当前主题、语言、设置值 | `Resource` | 它是全局单例配置，多个系统都要读写  |
 | 某个按钮正在 Hover / Pressed | 组件查询：`Interaction` / `Button` / `BackgroundColor` | 它是实体局部状态，适合 Query 驱动  |
-| 点击后要触发局部逻辑 | `on(|press: On<Pointer<Press>>| ...)` observer | 非常适合 scene 内联逻辑与局部行为封装  |
+| 点击后要触发局部逻辑 | <code>on(&#124;press: On&lt;Pointer&lt;Press&gt;&gt;&#124; ...)</code> observer | 非常适合 scene 内联逻辑与局部行为封装  |
 | 点击后要影响全局状态 | ordinary system + `ResMut` / `NextState` | 便于测试、日志、扩展与串联更多逻辑  |
 
 这里还要补一个经常被误解的点：**BSN 不是“取代 plugin / system / resource 的第四套抽象”**。官方 scene 文档把 BSN 放进的是 scene 系统，而不是 app 层本身；它让“生成与组合实体层级”更强大，但不会让调度、状态机、资源、窗口管理这些事情消失。真正成熟的 Bevy UI 项目，通常恰恰是把这些界限分得更清楚。
@@ -934,7 +934,7 @@ Bevy 0.19 已经给了比很多人想象中更好的 UI 调试工具。`UiDebugO
 | `TextLayout` | 对齐、换行等排版 | 多行文本、标题等 | 构造器改名为 `justify` / `linebreak` / `no_wrap`  |
 | `Button` | 无头按钮 widget | 可点击 UI 实体 | 负责 pressed 状态与 activate 语义，样式仍靠 `Node` / `BackgroundColor` 等  |
 | `Interaction` | hover / press / none 状态 | ECS 按钮 system | 仍然是最实用的 system 驱动交互入口  |
-| `on()` + `On<Pointer<Press>>` | entity observer | 局部点击逻辑、scene 内联行为 | 0.19 BSN 场景写法的亮点之一  |
+| <code>on()</code> + <code>On&lt;Pointer&lt;Press&gt;&gt;</code> | entity observer | 局部点击逻辑、scene 内联行为 | 0.19 BSN 场景写法的亮点之一  |
 | `ImageNode` | 在 UI 节点上显示图像 | 图标、面板、装饰图片 | `Node` 控制尺寸，`NodeImageMode` 控制缩放策略  |
 | `UiTargetCamera` | 指定根 UI 渲染到哪个 camera | 多窗口 / 多 viewport UI 根节点 | 多窗口 UI 的关键组件；只对根节点有效  |
 | `IsDefaultUiCamera` | 指定默认 UI camera | 多 camera 但不想处处写 `UiTargetCamera` 时 | 适合替换默认规则，但不如显式绑定直观  |

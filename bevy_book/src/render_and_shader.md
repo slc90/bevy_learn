@@ -36,39 +36,31 @@ Bevy 官方站点把 2D/3D 渲染都描述为“**built on top of Bevy’s Rende
   <rect x="20" y="20" width="180" height="60" rx="10" fill="#eef5ff" stroke="#4a76a8"/>
   <text x="110" y="45" text-anchor="middle" font-size="16" font-family="sans-serif">Main App ECS</text>
   <text x="110" y="65" text-anchor="middle" font-size="13" font-family="sans-serif">系统 / 组件 / 资源 / 资产</text>
-
   <rect x="290" y="20" width="180" height="60" rx="10" fill="#eefaf0" stroke="#4f8a5b"/>
   <text x="380" y="45" text-anchor="middle" font-size="16" font-family="sans-serif">RenderApp</text>
   <text x="380" y="65" text-anchor="middle" font-size="13" font-family="sans-serif">Extract / Prepare / Queue</text>
-
   <rect x="560" y="20" width="180" height="60" rx="10" fill="#fff5ea" stroke="#b8792e"/>
   <text x="650" y="45" text-anchor="middle" font-size="16" font-family="sans-serif">RenderGraph</text>
   <text x="650" y="65" text-anchor="middle" font-size="13" font-family="sans-serif">Nodes / Passes / Submit</text>
-
   <rect x="70" y="140" width="200" height="70" rx="10" fill="#f8f8ff" stroke="#6666aa"/>
   <text x="170" y="165" text-anchor="middle" font-size="15" font-family="sans-serif">高层路径</text>
   <text x="170" y="187" text-anchor="middle" font-size="13" font-family="sans-serif">Material / Material2d</text>
   <text x="170" y="205" text-anchor="middle" font-size="13" font-family="sans-serif">AsBindGroup + ShaderRef</text>
-
   <rect x="300" y="140" width="200" height="70" rx="10" fill="#fffdf5" stroke="#9a8b3a"/>
   <text x="400" y="165" text-anchor="middle" font-size="15" font-family="sans-serif">中层路径</text>
   <text x="400" y="187" text-anchor="middle" font-size="13" font-family="sans-serif">SpecializedMeshPipeline</text>
   <text x="400" y="205" text-anchor="middle" font-size="13" font-family="sans-serif">自定义布局 / key / draw</text>
-
   <rect x="530" y="140" width="200" height="70" rx="10" fill="#fff7f7" stroke="#aa6666"/>
   <text x="630" y="165" text-anchor="middle" font-size="15" font-family="sans-serif">低层路径</text>
   <text x="630" y="187" text-anchor="middle" font-size="13" font-family="sans-serif">自定义 pass / 后处理</text>
   <text x="630" y="205" text-anchor="middle" font-size="13" font-family="sans-serif">ViewTarget + PipelineCache</text>
-
   <line x1="200" y1="50" x2="290" y2="50" stroke="#555" stroke-width="2"/>
   <polygon points="290,50 280,45 280,55" fill="#555"/>
   <line x1="470" y1="50" x2="560" y2="50" stroke="#555" stroke-width="2"/>
   <polygon points="560,50 550,45 550,55" fill="#555"/>
-
   <line x1="170" y1="140" x2="340" y2="80" stroke="#666" stroke-width="2" stroke-dasharray="6,4"/>
   <line x1="400" y1="140" x2="380" y2="80" stroke="#666" stroke-width="2" stroke-dasharray="6,4"/>
   <line x1="630" y1="140" x2="620" y2="80" stroke="#666" stroke-width="2" stroke-dasharray="6,4"/>
-
   <text x="380" y="235" text-anchor="middle" font-size="12" font-family="sans-serif">图中虚线表示“常见接入层级”，不是唯一可能路径</text>
 </svg>
 
