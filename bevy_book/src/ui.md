@@ -101,7 +101,7 @@ path = "src/bin/multi_window_ui.rs"
 
 ### 资源准备
 
-这个示例为了展示 `ImageNode`，约定你在项目根目录放一个 `assets/icon.png`。任意 PNG 都可以；如果你暂时没有图片，也可以把示例里的 `ImageNode` 那一段先注释掉，仅保留布局容器与背景色，代码其余部分仍然成立。Bevy 官方 image-node 示例同样是用 `ImageNode` + `Node` 容器来控制 UI 图像尺寸。
+这个示例为了展示 `ImageNode`，约定你在项目根目录放一个 `assets/icon.jpg`。任意 JPG 都可以；如果你暂时没有图片，也可以把示例里的 `ImageNode` 那一段先注释掉，仅保留布局容器与背景色，代码其余部分仍然成立。为了正常显示中文，示例还需要一个覆盖中文字形的 `assets/SmileySans-Oblique.ttf`。Bevy 官方 image-node 示例同样是用 `ImageNode` + `Node` 容器来控制 UI 图像尺寸。
 
 目录建议如下：
 
@@ -109,7 +109,8 @@ path = "src/bin/multi_window_ui.rs"
 bevy019-ui-bsn-tutorial/
 ├─ Cargo.toml
 ├─ assets/
-│  └─ icon.png
+│  ├─ icon.jpg
+│  └─ SmileySans-Oblique.ttf
 └─ src/
    └─ bin/
       ├─ ui_basics_bsn.rs
@@ -120,13 +121,18 @@ bevy019-ui-bsn-tutorial/
 ### 完整源码
 
 ```rust
-use bevy::{prelude::*, ui::widget::NodeImageMode};
+use bevy::{asset::AssetId, prelude::*, ui::widget::NodeImageMode};
+
+const DEFAULT_UI_FONT_BYTES: &[u8] = include_bytes!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/assets/SmileySans-Oblique.ttf"
+));
 
 fn main() {
     App::new()
         .init_resource::<UiModel>()
         .add_plugins(DefaultPlugins)
-        .add_systems(Startup, app_scene.spawn())
+        .add_systems(Startup, (install_default_ui_font, app_scene.spawn()).chain())
         .add_systems(Update, (button_system, sync_texts))
         .run();
 }
@@ -153,6 +159,15 @@ struct CounterText;
 #[derive(Component, Clone, Default)]
 struct StatusText;
 
+fn install_default_ui_font(mut fonts: ResMut<Assets<Font>>) {
+    if let Err(error) = fonts.insert(
+        AssetId::default(),
+        Font::from_bytes(DEFAULT_UI_FONT_BYTES.to_vec()),
+    ) {
+        warn!("替换默认 UI 字体失败: {error}");
+    }
+}
+
 fn app_scene() -> impl SceneList {
     bsn_list![
         Camera2d,
@@ -172,18 +187,18 @@ fn ui_root() -> impl Scene {
         BackgroundColor(Color::srgb(0.08, 0.09, 0.11))
         Children [
             (
-                Text("Bevy 0.19 UI + BSN 基础示例"),
+                Text("Bevy 0.19 UI + BSN 基础示例")
                 TextFont {
                     font_size: px(30.0),
-                },
-                TextColor(Color::WHITE),
+                }
+                TextColor(Color::WHITE)
             ),
             (
-                Text("同一个界面里演示 Text / Button / ImageNode / Flex / ECS 状态同步"),
+                Text("同一个界面里演示 Text / Button / ImageNode / Flex / ECS 状态同步")
                 TextFont {
                     font_size: px(16.0),
-                },
-                TextColor(Color::srgb(0.75, 0.78, 0.84)),
+                }
+                TextColor(Color::srgb(0.75, 0.78, 0.84))
             ),
             (
                 Node {
@@ -201,13 +216,13 @@ fn ui_root() -> impl Scene {
                             border: px(2.0),
                             justify_content: JustifyContent::Center,
                             align_items: AlignItems::Center,
-                        },
-                        BorderColor::from(Color::srgb(0.30, 0.34, 0.40)),
-                        BackgroundColor(Color::srgb(0.12, 0.13, 0.16)),
+                        }
+                        BorderColor::from(Color::srgb(0.30, 0.34, 0.40))
+                        BackgroundColor(Color::srgb(0.12, 0.13, 0.16))
                         ImageNode {
-                            image: "icon.png",
+                            image: "icon.jpg",
                             image_mode: NodeImageMode::Stretch,
-                        },
+                        }
                     ),
                     (
                         Node {
@@ -216,32 +231,32 @@ fn ui_root() -> impl Scene {
                             row_gap: px(12.0),
                             padding: UiRect::all(px(16.0)),
                             border: px(2.0),
-                        },
-                        BorderColor::from(Color::srgb(0.30, 0.34, 0.40)),
-                        BackgroundColor(Color::srgb(0.12, 0.13, 0.16)),
+                        }
+                        BorderColor::from(Color::srgb(0.30, 0.34, 0.40))
+                        BackgroundColor(Color::srgb(0.12, 0.13, 0.16))
                         Children [
                             (
-                                Text("计数器状态"),
+                                Text("计数器状态")
                                 TextFont {
                                     font_size: px(22.0),
-                                },
-                                TextColor(Color::WHITE),
+                                }
+                                TextColor(Color::WHITE)
                             ),
                             (
-                                Text("0"),
-                                CounterText,
+                                Text("0")
+                                CounterText
                                 TextFont {
                                     font_size: px(48.0),
-                                },
-                                TextColor(Color::srgb(0.45, 0.85, 0.60)),
+                                }
+                                TextColor(Color::srgb(0.45, 0.85, 0.60))
                             ),
                             (
-                                Text("尚未发生交互"),
-                                StatusText,
+                                Text("尚未发生交互")
+                                StatusText
                                 TextFont {
                                     font_size: px(18.0),
-                                },
-                                TextColor(Color::srgb(0.85, 0.85, 0.88)),
+                                }
+                                TextColor(Color::srgb(0.85, 0.85, 0.88))
                             ),
                             (
                                 Node {
@@ -255,11 +270,11 @@ fn ui_root() -> impl Scene {
                                 ]
                             ),
                             (
-                                Text("左侧是 ImageNode；右侧是典型 Flex 布局容器。按钮的点击由 ECS system 处理。"),
+                                Text("左侧是 ImageNode；右侧是典型 Flex 布局容器。按钮的点击由 ECS system 处理。")
                                 TextFont {
                                     font_size: px(15.0),
-                                },
-                                TextColor(Color::srgb(0.70, 0.73, 0.80)),
+                                }
+                                TextColor(Color::srgb(0.70, 0.73, 0.80))
                             ),
                         ]
                     ),
@@ -290,11 +305,11 @@ fn basic_button(label: &str, kind: ButtonKind) -> impl Scene {
         BorderColor::from(Color::BLACK)
         BackgroundColor(base_color)
         Children [(
-            Text(label),
+            Text(label)
             TextFont {
                 font_size: px(20.0),
-            },
-            TextColor(Color::WHITE),
+            }
+            TextColor(Color::WHITE)
         )]
     }
 }
@@ -362,7 +377,7 @@ cargo run --bin ui_basics_bsn
 
 ### 代码拆解
 
-这个示例的关键不是“按钮能点”，而是你能看清 **BSN 负责声明，systems 负责行为** 的分界线。`app_scene()` 返回 `impl SceneList`，并由 `.add_systems(Startup, app_scene.spawn())` 一次性生成；这正是官方 `latest/examples/scene/bsn.rs` 的典型模式。
+这个示例的关键不是“按钮能点”，而是你能看清 **BSN 负责声明，systems 负责行为** 的分界线。`app_scene()` 返回 `impl SceneList`，并由 `.add_systems(Startup, (install_default_ui_font, app_scene.spawn()).chain())` 在安装默认中文字体后一次性生成；这沿用了官方 `latest/examples/scene/bsn.rs` 的 scene 启动模式。
 
 UI 根节点本身就是一个 `Node`。Bevy 官方 `Node` 文档与 Flex Layout 示例都表明：宽高、`flex_direction`、`align_items`、`justify_content`、`padding`、`row_gap`、`column_gap` 等布局属性全部都放在 `Node` 上，而不是某个单独的“Style 对象”里；从旧版教程迁移过来时，这个认知非常重要。
 
@@ -384,8 +399,8 @@ use bevy::prelude::*;
 fn main() {
     App::new()
         .init_resource::<ThemeSettings>()
-        .init_state::<AppScreen>()
         .add_plugins(DefaultPlugins)
+        .init_state::<AppScreen>()
         .add_systems(Startup, setup_camera_and_ui)
         .add_systems(
             Update,
@@ -417,10 +432,10 @@ impl Default for ThemeSettings {
     }
 }
 
-#[derive(Component, Clone, Copy)]
+#[derive(Component, Clone, Copy, Default)]
 struct ScreenPanel(AppScreen);
 
-#[derive(Component, Clone, Copy)]
+#[derive(Component, Clone, Copy, Default)]
 struct NavButton(AppScreen);
 
 #[derive(Component, Clone, Copy, Default)]
@@ -465,11 +480,12 @@ fn panel_shell(screen: AppScreen, title: &str, body: impl SceneList) -> impl Sce
         BackgroundColor(Color::srgb(0.14, 0.16, 0.20))
         Children [
             (
-                Text(title),
+                Text(title)
+                TextLayout::no_wrap()
                 TextFont {
                     font_size: px(28.0),
-                },
-                TextColor(Color::WHITE),
+                }
+                TextColor(Color::WHITE)
             ),
             {body},
         ]
@@ -482,11 +498,12 @@ fn menu_panel() -> impl Scene {
         "主菜单",
         bsn_list![
             (
-                Text("这里演示“可复用 widget + 内建 States”组合。"),
+                Text("这里演示“可复用 widget + 内建 States”组合。")
+                TextLayout::no_wrap()
                 TextFont {
                     font_size: px(16.0),
-                },
-                TextColor(Color::srgb(0.78, 0.80, 0.86)),
+                }
+                TextColor(Color::srgb(0.78, 0.80, 0.86))
             ),
             nav_button("开始游戏", AppScreen::Playing),
             nav_button("打开设置", AppScreen::Settings),
@@ -500,11 +517,12 @@ fn settings_panel() -> impl Scene {
         "设置",
         bsn_list![
             (
-                Text("点击按钮可切换主题色；这部分状态放在 Resource 里。"),
+                Text("点击按钮可切换主题色；这部分状态放在 Resource 里。")
+                TextLayout::no_wrap()
                 TextFont {
                     font_size: px(16.0),
-                },
-                TextColor(Color::srgb(0.78, 0.80, 0.86)),
+                }
+                TextColor(Color::srgb(0.78, 0.80, 0.86))
             ),
             (
                 Node {
@@ -513,16 +531,17 @@ fn settings_panel() -> impl Scene {
                     border: px(2.0),
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::Center,
-                },
-                ThemePreview,
-                BorderColor::from(Color::BLACK),
-                BackgroundColor(Color::srgb(0.20, 0.22, 0.26)),
+                }
+                ThemePreview
+                BorderColor::from(Color::BLACK)
+                BackgroundColor(Color::srgb(0.20, 0.22, 0.26))
                 Children [(
-                    Text("主题预览"),
+                    Text("主题预览")
+                    TextLayout::no_wrap()
                     TextFont {
                         font_size: px(20.0),
-                    },
-                    TextColor(Color::WHITE),
+                    }
+                    TextColor(Color::WHITE)
                 )]
             ),
             toggle_theme_button("切换明暗主题"),
@@ -537,11 +556,12 @@ fn playing_panel() -> impl Scene {
         "游戏中",
         bsn_list![
             (
-                Text("真实项目里，这里通常会换成 HUD / 暂停菜单 / 游戏内面板。"),
+                Text("真实项目里，这里通常会换成 HUD / 暂停菜单 / 游戏内面板。")
+                TextLayout::no_wrap()
                 TextFont {
                     font_size: px(16.0),
-                },
-                TextColor(Color::srgb(0.78, 0.80, 0.86)),
+                }
+                TextColor(Color::srgb(0.78, 0.80, 0.86))
             ),
             nav_button("返回主菜单", AppScreen::Menu),
             nav_button("进入设置", AppScreen::Settings),
@@ -564,11 +584,12 @@ fn nav_button(label: &str, target: AppScreen) -> impl Scene {
         BorderColor::from(Color::BLACK)
         BackgroundColor(Color::srgb(0.20, 0.32, 0.46))
         Children [(
-            Text(label),
+            Text(label)
+            TextLayout::no_wrap()
             TextFont {
                 font_size: px(18.0),
-            },
-            TextColor(Color::WHITE),
+            }
+            TextColor(Color::WHITE)
         )]
     }
 }
@@ -588,11 +609,12 @@ fn toggle_theme_button(label: &str) -> impl Scene {
         BorderColor::from(Color::BLACK)
         BackgroundColor(Color::srgb(0.36, 0.24, 0.16))
         Children [(
-            Text(label),
+            Text(label)
+            TextLayout::no_wrap()
             TextFont {
                 font_size: px(18.0),
-            },
-            TextColor(Color::WHITE),
+            }
+            TextColor(Color::WHITE)
         )]
     }
 }
@@ -691,7 +713,11 @@ cargo run --bin ui_states_widgets
 ### 完整源码
 
 ```rust
-use bevy::{camera::RenderTarget, prelude::*, window::WindowRef};
+use bevy::{
+    camera::RenderTarget,
+    prelude::*,
+    window::{WindowRef, WindowResized},
+};
 
 fn main() {
     App::new()
@@ -722,30 +748,26 @@ fn setup(mut commands: Commands) {
         .id();
 
     // 绑定到主窗口相机的 UI
-    commands.spawn_scene(window_overlay(
-        "主窗口 UI",
-        "这棵 UI 树显式绑定到主窗口相机",
-        primary_camera,
-        Color::srgb(0.16, 0.22, 0.34),
-    ));
+    commands
+        .spawn_scene(window_overlay(
+            "主窗口 UI",
+            "这棵 UI 树显式绑定到主窗口相机",
+            Color::srgb(0.16, 0.22, 0.34),
+        ))
+        .insert(UiTargetCamera(primary_camera));
 
     // 绑定到第二窗口相机的 UI
-    commands.spawn_scene(window_overlay(
-        "工具窗口 UI",
-        "这棵 UI 树显式绑定到第二窗口相机",
-        second_camera,
-        Color::srgb(0.34, 0.22, 0.16),
-    ));
+    commands
+        .spawn_scene(window_overlay(
+            "工具窗口 UI",
+            "这棵 UI 树显式绑定到第二窗口相机",
+            Color::srgb(0.34, 0.22, 0.16),
+        ))
+        .insert(UiTargetCamera(second_camera));
 }
 
-fn window_overlay(
-    title: &str,
-    subtitle: &str,
-    target_camera: Entity,
-    color: Color,
-) -> impl Scene {
+fn window_overlay(title: &str, subtitle: &str, color: Color) -> impl Scene {
     bsn! {
-        UiTargetCamera(target_camera)
         Node {
             position_type: PositionType::Absolute,
             top: px(12.0),
@@ -760,25 +782,25 @@ fn window_overlay(
         BackgroundColor(color)
         Children [
             (
-                Text(title),
+                Text(title)
                 TextFont {
                     font_size: px(24.0),
-                },
-                TextColor(Color::WHITE),
+                }
+                TextColor(Color::WHITE)
             ),
             (
-                Text(subtitle),
+                Text(subtitle)
                 TextFont {
                     font_size: px(15.0),
-                },
-                TextColor(Color::srgb(0.92, 0.92, 0.94)),
+                }
+                TextColor(Color::srgb(0.92, 0.92, 0.94))
             ),
             (
-                Text("拖动、缩放任意窗口，标题会自动更新。"),
+                Text("拖动、缩放任意窗口，标题会自动更新。")
                 TextFont {
                     font_size: px(14.0),
-                },
-                TextColor(Color::srgb(0.86, 0.86, 0.90)),
+                }
+                TextColor(Color::srgb(0.86, 0.86, 0.90))
             ),
         ]
     }
@@ -809,10 +831,12 @@ cargo run --bin multi_window_ui
 
 ### 多窗口 UI 的真正关键
 
-这个例子最重要的一行就是：
+这个例子最重要的动作就是在生成根 UI scene 后，把目标 camera 插入到这个根实体上：
 
 ```rust
-UiTargetCamera(target_camera)
+commands
+    .spawn_scene(window_overlay(/* ... */))
+    .insert(UiTargetCamera(primary_camera));
 ```
 
 官方 `UiTargetCamera` 文档已经说得很明确：它告诉 **根 `Node`** 这棵 UI 应该按哪台 camera 的 viewport / scale factor / render target 做布局和渲染；如果你把它加在非根节点上，是不会生效的。换句话说，多窗口 UI 的本质不是“给窗口加个 panel”，而是“**给目标 camera 绑定一棵 UI 根树**”。
