@@ -28,14 +28,14 @@ Bevy 0.19 真正的主线 API 只有两条：`AssetServer::load()` 与 `AssetSer
 
 ```mermaid
 flowchart TD
-    A["调用 AssetServer::load / load_builder"] --> B["解析 AssetPath\nsource + path + label"]
+    A["调用 AssetServer::load / load_builder"] --> B["解析 AssetPath<br/>source + path + label"]
     B --> C["定位 AssetSource"]
     C --> D["AssetReader 读取字节 / meta"]
     D --> E["匹配 AssetLoader"]
-    E --> F["LoadContext 处理中间依赖\nload / load_builder / add_labeled_asset"]
-    F --> G["生成 LoadedAsset\n记录 root / labeled assets / dependencies"]
+    E --> F["LoadContext 处理中间依赖<br/>load / load_builder / add_labeled_asset"]
+    F --> G["生成 LoadedAsset<br/>记录 root / labeled assets / dependencies"]
     G --> H["写入对应的 Assets<T>"]
-    H --> I["发出 AssetEvent\nAdded / LoadedWithDependencies / Modified / Unused / Removed"]
+    H --> I["发出 AssetEvent<br/>Added / LoadedWithDependencies / Modified / Unused / Removed"]
     I --> J["系统通过 Handle / Assets<T> / LoadState 消费"]
 ```
 
@@ -87,10 +87,16 @@ use bevy::{
 use serde::Deserialize;
 use thiserror::Error;
 
+/// 示例资产目录，使用 crate 路径避免运行目录影响 AssetServer。
+const ASSET_FILE_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets");
+
 fn main() {
     App::new()
+        .add_plugins(DefaultPlugins.set(AssetPlugin {
+            file_path: ASSET_FILE_PATH.to_string(),
+            ..default()
+        }))
         .insert_state(AppState::Loading)
-        .add_plugins(DefaultPlugins)
         .init_asset::<GameConfig>()
         .init_asset_loader::<GameConfigLoader>()
         .add_systems(Startup, setup_loading)
@@ -122,7 +128,7 @@ struct DemoAssets {
     atlas_image: Handle<Image>,
     atlas_layout: Handle<TextureAtlasLayout>,
     music: Handle<AudioSource>,
-    scene: Handle<Scene>,
+    scene: Handle<WorldAsset>,
     config: Handle<GameConfig>,
 }
 
@@ -193,7 +199,7 @@ fn setup_loading(
     mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
     // 2D overlay camera
-    commands.spawn(Camera2d);
+    commands.spawn((Camera2d, Camera { order: 1, ..default() }));
 
     // 3D world camera
     commands.spawn((
@@ -214,8 +220,8 @@ fn setup_loading(
         None,
         None,
     ));
-    let music: Handle<AudioSource> = asset_server.load("audio/bgm.ogg");
-    let scene: Handle<Scene> =
+    let music: Handle<AudioSource> = asset_server.load("audio/bgm.flac");
+    let scene: Handle<WorldAsset> =
         asset_server.load(GltfAssetLabel::Scene(0).from_asset("models/FlightHelmet/FlightHelmet.gltf"));
     let config: Handle<GameConfig> = asset_server.load("data/config.game.ron");
 
@@ -264,16 +270,18 @@ fn update_loading_progress(
         return;
     };
 
+    let mut failures = Vec::new();
     tracker.pending.retain(|handle| {
         match asset_server.get_recursive_dependency_load_state(handle) {
             Some(RecursiveDependencyLoadState::Loaded) => false,
             Some(RecursiveDependencyLoadState::Failed(err)) => {
-                tracker.failures.push(err.to_string());
+                failures.push(err.to_string());
                 false
             }
             _ => true,
         }
     });
+    tracker.failures.extend(failures);
 
     let done = tracker.total.saturating_sub(tracker.pending.len());
     let percent = if tracker.total == 0 {
@@ -300,9 +308,10 @@ fn spawn_demo_scene(
     demo: Res<DemoAssets>,
     configs: Res<Assets<GameConfig>>,
 ) {
-    let cfg = configs
-        .get(&demo.config)
-        .expect("config should be loaded before entering Ready");
+    let Some(cfg) = configs.get(&demo.config) else {
+        warn!("资源进入 Ready 状态后仍未找到 GameConfig，跳过场景生成");
+        return;
+    };
 
     info!(
         "Loaded config for player={} volume={}",
@@ -337,7 +346,7 @@ fn spawn_demo_scene(
     commands.spawn((
         DirectionalLight {
             illuminance: 12000.0,
-            shadows_enabled: true,
+            shadow_maps_enabled: true,
             ..default()
         },
         Transform::from_xyz(3.0, 6.0, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
@@ -357,10 +366,8 @@ fn animate_atlas(
 ) {
     for (mut timer, mut sprite) in &mut query {
         timer.tick(time.delta());
-        if timer.just_finished() {
-            if let Some(atlas) = &mut sprite.texture_atlas {
-                atlas.index = if atlas.index >= 6 { 1 } else { atlas.index + 1 };
-            }
+        if timer.just_finished() && let Some(atlas) = &mut sprite.texture_atlas {
+            atlas.index = if atlas.index >= 6 { 1 } else { atlas.index + 1 };
         }
     }
 }
@@ -406,7 +413,7 @@ assets/
 │  ├─ icon.png
 │  └─ gabe-idle-run.png
 ├─ audio/
-│  └─ bgm.ogg
+│  └─ bgm.flac
 ├─ models/
 │  └─ FlightHelmet/
 │     └─ FlightHelmet.gltf
@@ -419,7 +426,7 @@ assets/
 ```ron
 (
     player_name: "mdrs",
-    spawn: [0.0, 0.0, 0.0],
+    spawn: (0.0, 0.0, 0.0),
     music_volume: 0.8,
 )
 ```
@@ -430,27 +437,24 @@ assets/
 
 ## 读取、存储与扩展 AssetSource
 
-从磁盘读取是默认路径，但 Bevy 0.19 的设计远不止磁盘。官方示例表明，除了默认 source，你可以注册额外的命名 source，并通过 `AssetPath::with_source(...)` 或 `"name://path"` 语法从不同来源读取；也可以用 `embedded_asset!` 把资源嵌进程序；还可以通过 `WebAssetPlugin` 用 `https` source 直接从网络 URL 读取。换句话说，**“资产路径”与“文件系统路径”已经分离**：`AssetPath` 面向虚拟资源地址，而 reader/source 决定它最终落到哪里。
+从磁盘读取是默认路径，但 Bevy 0.19 的设计远不止磁盘。除了默认 source，你可以注册额外的命名 source，并通过 `AssetPath::with_source(...)` 或 `"name://path"` 语法从不同来源读取；也可以用 `embedded_asset!` 把资源字节嵌进程序，再用 `load_embedded_asset!` 走普通 `AssetServer` 加载流程；还可以通过 `WebAssetPlugin` 用 `https` source 直接从网络 URL 读取。换句话说，**“资产路径”与“文件系统路径”已经分离**：`AssetPath` 面向虚拟资源地址，而 reader/source 决定它最终落到哪里。
 
-**嵌入资源与网络加载最小示例**
+**嵌入资源读取最小示例**
 
 ```toml
 [dependencies]
-bevy = { version = "0.19", features = ["https"] }
+bevy = "0.19"
 ```
 
 ```rust
 use bevy::{
-    asset::{embedded_asset, io::AssetSourceId, io::web::WebAssetPlugin, AssetPath},
+    asset::{embedded_asset, load_embedded_asset},
     prelude::*,
 };
-use std::path::Path;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins.set(WebAssetPlugin {
-            silence_startup_warning: true,
-        }))
+        .add_plugins(DefaultPlugins)
         .add_plugins(MyEmbeddedPlugin)
         .add_systems(Startup, setup)
         .run();
@@ -460,30 +464,37 @@ struct MyEmbeddedPlugin;
 
 impl Plugin for MyEmbeddedPlugin {
     fn build(&self, app: &mut App) {
-        // 相对当前 Rust 文件位置嵌入；此处示例路径请替换为真实文件。
+        // 第三个参数是相对当前 Rust 文件的真实文件路径。
         embedded_asset!(app, "src/", "../assets/textures/icon.png");
+        embedded_asset!(app, "src/", "../assets/audio/bgm.flac");
     }
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Camera2d);
 
-    // 网络资源（示例 URL）
-    let remote: Handle<Image> =
-        asset_server.load("https://example.com/assets/hero.png");
-
-    // 嵌入资源，source = embedded
-    let embedded_path = AssetPath::from_path(Path::new("my_crate/assets/textures/icon.png"))
-        .with_source(AssetSourceId::from("embedded"));
-    let embedded: Handle<Image> = asset_server.load(embedded_path);
-
-    commands.spawn(Sprite::from_image(remote));
+    // 和 embedded_asset! 使用同一个路径字面量，宏会自动指向 embedded source。
+    let icon: Handle<Image> = load_embedded_asset!(&*asset_server, "../assets/textures/icon.png");
     commands.spawn((
-        Sprite::from_image(embedded),
+        Sprite::from_image(icon),
         Transform::from_xyz(128.0, 0.0, 0.0),
     ));
+
+    let music: Handle<AudioSource> =
+        load_embedded_asset!(&*asset_server, "../assets/audio/bgm.flac");
+    commands.spawn((AudioPlayer::new(music), PlaybackSettings::LOOP));
 }
 ```
+
+这里有两个路径概念必须分清。
+
+`embedded_asset!(app, "src/", "../assets/textures/icon.png")` 的第三个参数首先是给 `include_bytes!` 用的真实文件路径，因此它相对**调用这个宏的 Rust 源文件**。在当前 `crates/asset/src/main.rs` 中，`../assets/textures/icon.png` 指向的就是 `crates/asset/assets/textures/icon.png`。这个文件会在编译期嵌进二进制，并注册到 Bevy 的 `embedded` asset source 中。
+
+第二个参数 `"src/"` 不是资产目录，也不是读取根目录；它是生成 embedded `AssetPath` 时要寻找并裁掉的源码前缀。Bevy 会根据当前 crate 名、`file!()` 返回的源文件路径、这个源码前缀和第三个参数一起计算最终 embedded 路径。默认写法 `embedded_asset!(app, "foo.wgsl")` 等价于使用 `"src"` 作为源码前缀，适合资源就在 `src` 附近的 crate 内部资源；当前示例把资源放在 `src` 外面的 `assets` 目录，因此显式保留 `"src/"` 并用 `../assets/...` 指回真实文件。
+
+读取同一模块中注册的嵌入资源时，优先用 `load_embedded_asset!(&*asset_server, "../assets/textures/icon.png")`，并让它和 `embedded_asset!` 使用同一个路径字面量。这个宏会复用完全相同的 embedded 路径计算逻辑，再自动把 source 设置为 `embedded`，最后调用 `AssetServer::load` 返回正常的 `Handle<T>`。因此它比手写 `AssetPath::from_path(...).with_source("embedded")` 更不容易和注册路径脱节。只有当你要把 embedded 资源作为公开路径暴露给其他模块或用户时，才更适合手写或文档化 `"embedded://..."` 形式；这时可以用 `embedded_path!` 辅助确认最终路径。
+
+嵌入资源并不会绕过 Asset 系统：`png` 仍然由图片 loader 解析，`flac` 仍然由音频 loader 解析，返回值仍然是强类型 `Handle<Image>` / `Handle<AudioSource>`，生命周期、缓存和事件也仍然由 `AssetServer` 管理。它只是把底层字节来源从磁盘 source 换成了 `embedded` source。若需要网络资源，则再额外启用 `https` feature 并配置 `WebAssetPlugin`，然后直接加载 `https://...` 路径即可；这和嵌入资源是两条不同的 source 路线。
 
 上面的设计是 0.19 里理解 `AssetPath` 最直接的方式：source 名称进入路径语义本身，而不是散落在“另一个全局配置对象”里。官方 `extra_source` 示例还特意强调：额外 source 的注册必须发生在 `DefaultPlugins` 之前，因为 `AssetPlugin` 会在构建时完成资源系统初始化。
 

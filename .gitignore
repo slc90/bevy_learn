@@ -5,3 +5,6 @@ target/
 *.ttf
 *.bin
 *.gltf
+*.mp3
+*.flac
+*.ron
