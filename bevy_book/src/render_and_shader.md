@@ -80,7 +80,7 @@ sequenceDiagram
     Main->>Main: Update 系统修改组件/资源/资产
     Main->>Extract: 提取可渲染数据
     Extract->>Render: 写入 Render World
-    Render->>Render: Prepare GPU 资源\nBuffer / Texture / BindGroup / Pipeline
+    Render->>Render: Prepare GPU 资源<br/>Buffer / Texture / BindGroup / Pipeline
     Render->>Queue: 为每个 View 生成 PhaseItem
     Queue->>Queue: 排序 / 批处理 / 特化 pipeline
     Queue->>Graph: 执行具体 render pass / node
@@ -388,10 +388,7 @@ bevy = "0.19"
 
 ```rust
 use bevy::{
-    core_pipeline::{
-        core_3d::{Core3d, Core3dSystems},
-        fullscreen_vertex_shader::FullscreenShader,
-    },
+    core_pipeline::{Core3d, Core3dSystems, FullscreenShader},
     prelude::*,
     render::{
         extract_component::{
