@@ -10,5 +10,6 @@
 - [UI 与 BSN](./ui.md)
 - [Asset 资产系统](./assets.md)
 - [后台线程与异步](./background.md)
+- [2D 渲染](./2d.md)
 - [3D 渲染](./3d.md)
 - [渲染管线与自定义 Shader](./render_and_shader.md)
